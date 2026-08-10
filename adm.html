@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Interclasse</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" href="adm.css">
+</head>
+<body>
+
+<h1>Área de Admin</h1>
+
+<form id="form-cadastro" class="form-cadastro">
+    <h2>Cadastrar resultado</h2>
+
+    <div class="campo-duplo">
+        <div class="campo">
+            <label for="time_vencedor">Time vencedor</label>
+            <select id="time_vencedor" required>
+                <option value="">Selecione o time</option>
+            </select>
+        </div>
+
+        <div class="campo">
+            <label for="time_perdedor">Time perdedor</label>
+            <select id="time_perdedor" required>
+                <option value="">Selecione o time</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="campo-duplo">
+        <div class="campo">
+            <label for="gols_vencedor">Gols do vencedor</label>
+            <input type="number" id="gols_vencedor" min="0" required>
+        </div>
+
+        <div class="campo">
+            <label for="gols_perdedor">Gols do perdedor</label>
+            <input type="number" id="gols_perdedor" min="0" required>
+        </div>
+    </div>
+
+    <div class="campo-duplo">
+        <div class="campo">
+            <label for="gols_vencedor_f">Placar extra vencedor</label>
+            <input type="number" id="gols_vencedor_f" min="0">
+        </div>
+
+        <div class="campo">
+            <label for="gols_perdedor_f">Placar extra perdedor</label>
+            <input type="number" id="gols_perdedor_f" min="0">
+        </div>
+    </div>
+
+    <div class="campo-duplo">
+        <div class="campo">
+            <label for="gol1">Artilheiro 1 - vencedor</label>
+            <select id="gol1">
+                <option value="">Selecione o jogador</option>
+            </select>
+        </div>
+
+        <div class="campo">
+            <label for="gol2">Artilheiro 2 - vencedor</label>
+            <select id="gol2">
+                <option value="">Selecione o jogador</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="campo-duplo">
+        <div class="campo">
+            <label for="gol3">Artilheiro 1 - perdedor</label>
+            <select id="gol3">
+                <option value="">Selecione o jogador</option>
+            </select>
+        </div>
+
+        <div class="campo">
+            <label for="gol4">Artilheiro 2 - perdedor</label>
+            <select id="gol4">
+                <option value="">Selecione o jogador</option>
+            </select>
+        </div>
+    </div>
+
+    <button type="submit">Cadastrar resultado</button>
+    <div id="mensagem-cadastro"></div>
+</form>
+
+<form id="form-proximo-jogo" class="form-cadastro">
+    <h2>Cadastrar próximo jogo</h2>
+
+    <div class="campo-duplo">
+        <div class="campo">
+            <label for="proximo_time1">Time 1</label>
+            <select id="proximo_time1" required>
+                <option value="">Selecione o time</option>
+            </select>
+        </div>
+
+        <div class="campo">
+            <label for="proximo_time2">Time 2</label>
+            <select id="proximo_time2" required>
+                <option value="">Selecione o time</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="campo-duplo">
+        <div class="campo">
+            <label for="proximo_data">Data</label>
+            <input type="date" id="proximo_data" required>
+        </div>
+
+        <div class="campo">
+            <label for="proximo_hora">Horário</label>
+            <input type="time" id="proximo_hora" required>
+        </div>
+    </div>
+
+    <div class="campo">
+        <label for="proximo_local">Local</label>
+        <input type="text" id="proximo_local" required>
+    </div>
+
+    <button type="submit">Cadastrar próximo jogo</button>
+    <div id="mensagem-proximo-jogo"></div>
+</form>
+
+<form id="form-jogador" class="form-cadastro">
+    <h2>Adicionar jogador</h2>
+
+    <div class="campo">
+        <label for="nome_jogador">Nome do jogador</label>
+        <input type="text" id="nome_jogador" required>
+    </div>
+
+    <div class="campo-duplo">
+        <div class="campo">
+            <label for="time_jogador">Time</label>
+            <select id="time_jogador" required>
+                <option value="">Selecione o time</option>
+            </select>
+        </div>
+
+        <div class="campo">
+            <label for="posicao_jogador">Posição</label>
+            <select id="posicao_jogador" required>
+                <option value="">Selecione a posição</option>
+                <option value="goleiro">Goleiro</option>
+                <option value="fixo">Fixo</option>
+                <option value="ala_direito">Ala direito</option>
+                <option value="ala_esquerdo">Ala esquerdo</option>
+                <option value="pivo">Pivô</option>
+                <option value="reserva1">Reserva 1</option>
+                <option value="reserva2">Reserva 2</option>
+                <option value="reserva3">Reserva 3</option>
+                <option value="reserva4">Reserva 4</option>
+                <option value="reserva5">Reserva 5</option>
+            </select>
+        </div>
+    </div>
+
+    <button type="submit">Adicionar jogador</button>
+    <div id="mensagem-jogador"></div>
+</form>
+
+<h2>Jogos cadastrados</h2>
+<div id="conteudo-resultados"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase client.js"></script>
+<script src="resultados.js"></script>
+<script src="admin.js"></script>
+
+</body>
+</html>
