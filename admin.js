@@ -27,11 +27,12 @@ async function carregarTimes() {
     times = data || [];
 
     const selects = [
-        "time_vencedor",
-        "time_perdedor",
+        "time1",
+        "time2",
         "proximo_time1",
         "proximo_time2",
-        "time_jogador"
+        "time_jogador",
+        "grupo_time"
     ];
 
     selects.forEach(id => {
@@ -111,11 +112,11 @@ async function preencherArtilheiros(nomeTime, ids) {
     });
 }
 
-document.getElementById("time_vencedor").addEventListener("change", function() {
+document.getElementById("time1").addEventListener("change", function() {
     preencherArtilheiros(this.value, ["gol1", "gol2"]);
 });
 
-document.getElementById("time_perdedor").addEventListener("change", function() {
+document.getElementById("time2").addEventListener("change", function() {
     preencherArtilheiros(this.value, ["gol3", "gol4"]);
 });
 
@@ -135,19 +136,19 @@ document.getElementById("form-cadastro").addEventListener("submit", async functi
     };
 
     const novoJogo = {
-        time_vencedor: pegarTexto("time_vencedor"),
-        time_perdedor: pegarTexto("time_perdedor"),
-        gols_vencedor: pegarNumero("gols_vencedor"),
-        gols_perdedor: pegarNumero("gols_perdedor"),
-        gols_vencedor_f: pegarNumero("gols_vencedor_f"),
-        gols_perdedor_f: pegarNumero("gols_perdedor_f"),
+        time1: pegarTexto("time1"),
+        time2: pegarTexto("time2"),
+        gols_time1: pegarNumero("gols_time1"),
+        gols_time2: pegarNumero("gols_time2"),
+        gols_time1_f: pegarNumero("gols_time1_f"),
+        gols_time2_f: pegarNumero("gols_time2_f"),
         gol1: pegarTexto("gol1"),
         gol2: pegarTexto("gol2"),
         gol3: pegarTexto("gol3"),
         gol4: pegarTexto("gol4")
     };
 
-    if (novoJogo.time_vencedor === novoJogo.time_perdedor) {
+    if (novoJogo.time1 === novoJogo.time2) {
         mensagem.textContent = "Os times precisam ser diferentes.";
         mensagem.className = "erro";
         return;
@@ -280,6 +281,142 @@ document.getElementById("form-jogador").addEventListener("submit", async functio
     }
 
     mensagem.textContent = "Jogador adicionado com sucesso!";
+    mensagem.className = "sucesso";
+
+    this.reset();
+
+    await carregarTimes();
+});
+
+// =====================================================
+// CADASTRAR TIME (todos os campos da tabela "jogadores")
+// =====================================================
+document.getElementById("form-time").addEventListener("submit", async function(evento) {
+    evento.preventDefault();
+
+    const mensagem = document.getElementById("mensagem-time");
+
+    const nome = document.getElementById("novo_time_nome").value.trim();
+    const grupo = document.getElementById("novo_time_grupo").value;
+
+    if (!nome) {
+        mensagem.textContent = "Informe o nome do time.";
+        mensagem.className = "erro";
+        return;
+    }
+
+    mensagem.textContent = "Verificando time...";
+    mensagem.className = "";
+
+    // O nome precisa ser único (é ele que liga o time à classificação)
+    const { data: existente, error: erroBusca } = await supabaseClient
+        .from("jogadores")
+        .select("id")
+        .eq("time", nome)
+        .maybeSingle();
+
+    if (erroBusca) {
+        console.error("Erro ao verificar o time:", erroBusca);
+        mensagem.textContent = "Erro ao verificar o time.";
+        mensagem.className = "erro";
+        return;
+    }
+
+    if (existente) {
+        mensagem.textContent = "Já existe um time com esse nome.";
+        mensagem.className = "erro";
+        return;
+    }
+
+    const jogadoresPreenchidos = posicoes
+        .map(posicao => document.getElementById(`pos_${posicao}`).value.trim())
+        .filter(valor => valor !== "");
+
+    const jogadorRepetido = jogadoresPreenchidos.some((nome1, i) =>
+        jogadoresPreenchidos.some((nome2, j) =>
+            i !== j && nome1.toLowerCase() === nome2.toLowerCase()
+        )
+    );
+
+    if (jogadorRepetido) {
+        mensagem.textContent = "Tem jogador repetido nos campos do time.";
+        mensagem.className = "erro";
+        return;
+    }
+
+    const novoTime = { time: nome, grupo: grupo };
+
+    posicoes.forEach(posicao => {
+        const valor = document.getElementById(`pos_${posicao}`).value.trim();
+
+        if (valor) {
+            novoTime[posicao] = valor;
+        }
+    });
+
+    mensagem.textContent = "Cadastrando time...";
+    mensagem.className = "";
+
+    const { error } = await supabaseClient
+        .from("jogadores")
+        .insert([novoTime]);
+
+    if (error) {
+        console.error("Erro ao cadastrar o time:", error);
+        mensagem.textContent = "Erro ao cadastrar o time. Se o erro for de permissão (RLS), rode o bloco 6 do atualizacao-supabase.sql.";
+        mensagem.className = "erro";
+        return;
+    }
+
+    mensagem.textContent = "Time cadastrado com sucesso! Ele já aparece na classificação.";
+    mensagem.className = "sucesso";
+
+    this.reset();
+
+    await carregarTimes();
+});
+
+// =====================================================
+// ATUALIZAR GRUPO DO TIME
+// =====================================================
+document.getElementById("form-grupo").addEventListener("submit", async function(evento) {
+    evento.preventDefault();
+
+    const mensagem = document.getElementById("mensagem-grupo");
+
+    const nomeTime = document.getElementById("grupo_time").value;
+    const grupo = document.getElementById("grupo_novo").value;
+
+    if (!nomeTime || !grupo) {
+        mensagem.textContent = "Selecione o time e o grupo.";
+        mensagem.className = "erro";
+        return;
+    }
+
+    const time = times.find(item => item.time === nomeTime);
+
+    if (!time) {
+        mensagem.textContent = "Time não encontrado.";
+        mensagem.className = "erro";
+        return;
+    }
+
+    mensagem.textContent = "Atualizando grupo...";
+    mensagem.className = "";
+
+    const { error } = await supabaseClient
+        .from("jogadores")
+        .update({ grupo: grupo })
+        .eq("id", time.id);
+
+    if (error) {
+        console.error("Erro ao atualizar o grupo:", error);
+        mensagem.textContent = "Erro ao atualizar o grupo.";
+        mensagem.className = "erro";
+        return;
+    }
+
+    mensagem.textContent = "Grupo atualizado com sucesso!";
     mensagem.className = "sucesso";
 
     this.reset();

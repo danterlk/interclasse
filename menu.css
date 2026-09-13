@@ -99,6 +99,23 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* Cabeçalhos das seções de esporte (Futebol, Jiu-Jitsu, Vôlei) */
+.menu-mobile .menu-secao {
+    padding: 18px 30px 8px;
+    color: #9db4e8;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    border-bottom: none;
+}
+
+.menu-mobile .menu-secao:first-child {
+    padding-top: 4px;
+    border-top: none;
+}
+
 /* Links entram em cascata quando o menu abre */
 #menu-toggle:checked ~ .menu-mobile li {
     opacity: 1;
@@ -106,19 +123,39 @@
 }
 
 #menu-toggle:checked ~ .menu-mobile li:nth-child(1) {
-    transition-delay: 0.1s;
+    transition-delay: 0.07s;
 }
 
 #menu-toggle:checked ~ .menu-mobile li:nth-child(2) {
-    transition-delay: 0.2s;
+    transition-delay: 0.14s;
 }
 
 #menu-toggle:checked ~ .menu-mobile li:nth-child(3) {
-    transition-delay: 0.3s;
+    transition-delay: 0.21s;
 }
 
 #menu-toggle:checked ~ .menu-mobile li:nth-child(4) {
-    transition-delay: 0.4s;
+    transition-delay: 0.28s;
+}
+
+#menu-toggle:checked ~ .menu-mobile li:nth-child(5) {
+    transition-delay: 0.35s;
+}
+
+#menu-toggle:checked ~ .menu-mobile li:nth-child(6) {
+    transition-delay: 0.42s;
+}
+
+#menu-toggle:checked ~ .menu-mobile li:nth-child(7) {
+    transition-delay: 0.49s;
+}
+
+#menu-toggle:checked ~ .menu-mobile li:nth-child(8) {
+    transition-delay: 0.56s;
+}
+
+#menu-toggle:checked ~ .menu-mobile li:nth-child(9) {
+    transition-delay: 0.63s;
 }
 
 .menu-mobile a {
@@ -134,6 +171,11 @@
 .menu-mobile a:hover {
     background: #6235bc;
     padding-left: 38px;
+}
+
+/* Link da página atual em destaque */
+.menu-mobile a[aria-current="page"] {
+    background: #6235bc;
 }
 
 /* Ajustes para telas menores */

@@ -12,38 +12,50 @@ async function carregarResultados() {
         if (error) throw error;
 
         if (!data || data.length === 0) {
-            container.innerHTML = "<div class='loading'>Nenhum jogo cadastrado na aba de resultados ainda.</div>";
+            container.innerHTML = "<div class='loading'>Nenhum jogo cadastrado na tabela de resultados ainda.</div>";
             return;
         }
 
         let htmlCards = '<div class="grid-resultados">';
 
         data.forEach((jogo) => {
-            const timeVencedor = jogo.time_vencedor;
-            const timePerdedor = jogo.time_perdedor;
-            const golsVencedor = jogo.gols_vencedor ?? 0;
-            const golsPerdedor = jogo.gols_perdedor ?? 0;
-            const golsVencedorf = jogo.gols_vencedor_f;
-            const golsPerdedorf = jogo.gols_perdedor_f;
-            const mostrarPlacarF = golsVencedorf !== null && golsPerdedorf !== null
-                && golsVencedorf !== undefined && golsPerdedorf !== undefined;
+            // Time 1 fica sempre à esquerda e Time 2 à direita
+            const time1 = jogo.time1;
+            const time2 = jogo.time2;
+            const golsTime1 = jogo.gols_time1 ?? 0;
+            const golsTime2 = jogo.gols_time2 ?? 0;
+            const golsTime1f = jogo.gols_time1_f;
+            const golsTime2f = jogo.gols_time2_f;
+            // Faltas (placar-f): aparece quando o jogo tiver —
+            // basta um lado preenchido (o outro mostra 0)
+            const temFaltas = (golsTime1f !== null && golsTime1f !== undefined)
+                || (golsTime2f !== null && golsTime2f !== undefined);
 
-            const artilheirosVencedor = [jogo.gol1, jogo.gol2].filter(Boolean).join('<br>');
-            const artilheirosPerdedor = [jogo.gol3, jogo.gol4].filter(Boolean).join('<br>');
-            const temArtilheiros = artilheirosVencedor !== '' || artilheirosPerdedor !== '';
+            // Time 1: gol1/gol2 | Time 2: gol3/gol4
+            const artilheirosTime1 = [jogo.gol1, jogo.gol2].filter(Boolean).join('<br>');
+            const artilheirosTime2 = [jogo.gol3, jogo.gol4].filter(Boolean).join('<br>');
+            const temArtilheiros = artilheirosTime1 !== '' || artilheirosTime2 !== '';
+
+            const venceu1 = golsTime1 > golsTime2;
+            const venceu2 = golsTime2 > golsTime1;
+            const empate = !venceu1 && !venceu2;
+
+            // Classes de cor (venceu/perdeu/empate) sem trocar a posição no grid
+            const corLado1 = venceu1 ? ' venceu' : (venceu2 ? ' perdeu' : ' empate');
+            const corLado2 = venceu2 ? ' venceu' : (venceu1 ? ' perdeu' : ' empate');
 
             htmlCards += `
             <div class="card-placar">
                 <div class="confronto">
-                    <div class="time-box time-vencedor">${timeVencedor}</div>
-                    <div class="placar-numeros">${golsVencedor} - ${golsPerdedor}</div>
-                    <div class="time-box time-perdedor">${timePerdedor}</div>
+                    <div class="time-box time-vencedor${corLado1}">${time1}</div>
+                    <div class="placar-numeros">${golsTime1} - ${golsTime2}</div>
+                    <div class="time-box time-perdedor${corLado2}">${time2}</div>
 
-                    <div class="tabelaart tabelaart-vencedor">${temArtilheiros ? artilheirosVencedor : '&nbsp;'}</div>
-                    <div class="placar-f">${mostrarPlacarF ? `${golsVencedorf} - ${golsPerdedorf}` : '&nbsp;'}</div>
-                    <div class="tabelaart tabelaart-perdedor">${temArtilheiros ? artilheirosPerdedor : '&nbsp;'}</div>
+                    <div class="tabelaart tabelaart-vencedor">${temArtilheiros ? artilheirosTime1 : '&nbsp;'}</div>
+                    <div class="placar-f">${temFaltas ? `<span class="rotulo-f">Faltas</span>${golsTime1f ?? 0} - ${golsTime2f ?? 0}` : '&nbsp;'}</div>
+                    <div class="tabelaart tabelaart-perdedor">${temArtilheiros ? artilheirosTime2 : '&nbsp;'}</div>
                 </div>
-                <div class="status-partida">Fim de jogo</div>
+                <div class="status-partida">${empate ? 'Empate' : 'Fim de jogo'}</div>
             </div>
             `;
         });

@@ -1,47 +1,61 @@
-const SPREADSHEET_ID = '1FDwr9XhrdbMkPKEv5a4qA2Sr0kMUVAe-ZpcEeaNB4CM';
+// =====================================================
+// CLASSIFICAÇÃO - 100% SUPABASE (sem planilhas)
+// =====================================================
+// A tabela lê a VISÃO "classificacao" do Supabase, que calcula
+// sozinha PJ, PTS, V, E, D, GP, GC e SG a partir de cada jogo
+// cadastrado na tabela "resultados" pelo admin.html.
+// Cadastrou um jogo? Os pontos mudam sozinhos.
 
-// URL protegida contra travamentos de CORS
-const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=pontos`;
+const posicoesJogadores = [
+    { chave: 'goleiro', rotulo: 'Goleiro' },
+    { chave: 'fixo', rotulo: 'Fixo' },
+    { chave: 'ala_direito', rotulo: 'Ala direito' },
+    { chave: 'ala_esquerdo', rotulo: 'Ala esquerdo' },
+    { chave: 'pivo', rotulo: 'Pivô' },
+    { chave: 'reserva1', rotulo: 'Reserva 1' },
+    { chave: 'reserva2', rotulo: 'Reserva 2' },
+    { chave: 'reserva3', rotulo: 'Reserva 3' },
+    { chave: 'reserva4', rotulo: 'Reserva 4' },
+    { chave: 'reserva5', rotulo: 'Reserva 5' }
+];
 
-// URL da aba de jogadores
-const urlJogadores = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=jogadores`;
+let elencos = {}; // guarda { "nome do time": [{posicao, nome}, ...] }
 
-let elencos = {}; // vai guardar { "nome do time": [{posicao, nome}, ...] }
+function escaparHTML(texto) {
+    return String(texto ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
 
-async function carregarJogadores() {
+async function carregarElencos() {
     try {
-        const resposta = await fetch(urlJogadores);
-        if (!resposta.ok) throw new Error('Erro ao acessar a planilha de jogadores.');
+        const { data, error } = await supabaseClient
+            .from('jogadores')
+            .select('*');
 
-        const csvTexto = await resposta.text();
-        const linhas = csvTexto.split('\n');
+        if (error) throw error;
 
-        // Pega o cabeçalho (posições) da primeira linha
-        const separador = linhas[0].includes(';') ? ';' : ',';
-        const cabecalho = linhas[0].split(separador).map(c => c.replace(/^"|"$/g, '').trim());
+        elencos = {};
 
-        linhas.slice(1).forEach((linha) => {
-            if (!linha.trim()) return;
-
-            const colunas = linha.split(separador).map(c => c.replace(/^"|"$/g, '').trim());
-            const nomeTime = colunas[0];
-            if (!nomeTime) return;
-
+        (data || []).forEach((time) => {
             const jogadoresDoTime = [];
-            for (let i = 1; i < cabecalho.length; i++) {
-                if (colunas[i]) {
-                    jogadoresDoTime.push({
-                        posicao: cabecalho[i],
-                        nome: colunas[i]
-                    });
-                }
-            }
 
-            elencos[nomeTime.toLowerCase()] = jogadoresDoTime;
+            posicoesJogadores.forEach(({ chave, rotulo }) => {
+                const nome = time[chave];
+
+                if (nome && String(nome).trim() !== '') {
+                    jogadoresDoTime.push({ posicao: rotulo, nome: nome });
+                }
+            });
+
+            elencos[String(time.time).toLowerCase()] = jogadoresDoTime;
         });
 
     } catch (erro) {
-        console.error("Erro ao carregar jogadores:", erro);
+        console.error('Erro ao carregar os elencos do Supabase:', erro);
     }
 }
 
@@ -60,7 +74,7 @@ function mostrarJogadores(nomeTime) {
         corpoModal.innerHTML = jogadores.map(j => `
             <div class="jogador-item">
                 <span class="jogador-posicao">${j.posicao}</span>
-                <span class="jogador-nome">${j.nome}</span>
+                <span class="jogador-nome">${escaparHTML(j.nome)}</span>
             </div>
         `).join('');
     }
@@ -73,72 +87,39 @@ function fecharModal() {
 }
 
 async function carregarCampeonato() {
+    const container = document.getElementById('campeonato-conteudo');
+
     try {
-        const resposta = await fetch(url);
-        if (!resposta.ok) throw new Error('Erro ao acessar a planilha.');
-        
-        const csvTexto = await resposta.text();
-        const linhas = csvTexto.split('\n');
+        // A ordem já vem correta do banco: grupo, pontos, saldo e gols pró
+        const { data, error } = await supabaseClient
+            .from('classificacao')
+            .select('*')
+            .order('grupo', { ascending: true })
+            .order('pts', { ascending: false })
+            .order('sg', { ascending: false })
+            .order('gp', { ascending: false })
+            .order('time', { ascending: true });
 
-        let grupoAtual = "";
-        let dadosGrupos = { "Grupo 1": [], "Grupo 2": [] };
+        if (error) throw error;
 
-        // 1. LEITURA DOS DADOS DA PLANILHA
-        linhas.forEach((linha) => {
-            const separador = linha.includes(';') ? ';' : ',';
-            const colunas = linha.split(separador).map(celula => celula.replace(/^"|"$/g, '').trim());
-            
-            if (!colunas[0]) return; 
-            
-            const primeiraCelula = colunas[0].toLowerCase();
-
-            // Detecta em qual grupo os times abaixo pertencem
-            if (primeiraCelula.includes("grupo 1")) {
-                grupoAtual = "Grupo 1";
-                return;
-            } else if (primeiraCelula.includes("grupo 2")) {
-                grupoAtual = "Grupo 2";
-                return;
-            }
-
-            // Pula a linha que serve apenas de cabeçalho na planilha
-            if (primeiraCelula === "times" || primeiraCelula === "") return;
-
-            const formatarNumero = (valor) => valor && !isNaN(valor) ? parseInt(valor) : 0;
-
-            if (grupoAtual) {
-                dadosGrupos[grupoAtual].push({
-                    time: colunas[0],
-                    pj: formatarNumero(colunas[1]),
-                    pts: formatarNumero(colunas[2]),
-                    v: formatarNumero(colunas[3]),
-                    e: formatarNumero(colunas[4]),
-                    d: formatarNumero(colunas[5]),
-                    gp: formatarNumero(colunas[6]),
-                    gc: formatarNumero(colunas[7]),
-                    sg: formatarNumero(colunas[8])
-                });
-            }
-        });
-
-        // 2. A SUA LÓGICA DE ORDENAÇÃO APLICADA NOS DADOS REAIS
-        // Organiza por Pontos (PTS) e usa o Saldo de Gols (SG) como critério de desempate
-        for (let grupo in dadosGrupos) {
-            dadosGrupos[grupo].sort((a, b) => {
-                if (b.pts !== a.pts) {
-                    return b.pts - a.pts; // Maior pontuação fica em cima
-                }
-                return b.sg - a.sg; // Se empatar em pontos, desempata pelo Saldo de Gols
-            });
+        if (!data || data.length === 0) {
+            container.innerHTML = "<div class='loading'>Nenhum time cadastrado ainda. Adicione os times (1 linha por time) na tabela 'jogadores' do Supabase.</div>";
+            return;
         }
 
-        // 3. RENDERIZAÇÃO DO HTML NA TELA
+        // Agrupa os times por grupo preservando a ordem vinda do banco
+        const grupos = {};
+        data.forEach((item) => {
+            const nomeGrupo = item.grupo || 'Classificação';
+            if (!grupos[nomeGrupo]) grupos[nomeGrupo] = [];
+            grupos[nomeGrupo].push(item);
+        });
+
+        // RENDERIZAÇÃO DO HTML NA TELA
         let htmlFinal = '';
 
-        for (let grupo in dadosGrupos) {
-            if (dadosGrupos[grupo].length === 0) continue;
-
-            htmlFinal += `<h2>${grupo}</h2>`;
+        for (let grupo in grupos) {
+            htmlFinal += `<h2>${escaparHTML(grupo)}</h2>`;
             htmlFinal += `
                 <div class="tabela-container">
                     <table>
@@ -159,12 +140,11 @@ async function carregarCampeonato() {
                         <tbody>
             `;
 
-            // Adiciona a posição automática (i + 1) igual ao seu código original
-            dadosGrupos[grupo].forEach((item, i) => {
+            grupos[grupo].forEach((item, i) => {
                 htmlFinal += `
                     <tr>
                         <td>${i + 1}°</td>
-                        <td class="time" onclick="mostrarJogadores('${item.time}')">${item.time}</td>
+                        <td class="time" onclick="mostrarJogadores(this.textContent)">${escaparHTML(item.time)}</td>
                         <td>${item.pj}</td>
                         <td><strong>${item.pts}</strong></td>
                         <td>${item.v}</td>
@@ -180,14 +160,28 @@ async function carregarCampeonato() {
             htmlFinal += `</tbody></table></div>`;
         }
 
-        document.getElementById('campeonato-conteudo').innerHTML = htmlFinal;
+        container.innerHTML = htmlFinal;
 
     } catch (erro) {
-        console.error("Erro:", erro);
-        document.getElementById('campeonato-conteudo').innerHTML = "<div class='loading'>Erro ao carregar a classificação. Verifique a conexão.</div>";
+        console.error('Erro:', erro);
+        container.innerHTML = "<div class='loading'>Erro ao carregar a classificação. Verifique a conexão e se o arquivo atualizacao-supabase.sql já foi executado no Supabase.</div>";
     }
+}
+
+// Atualização ao vivo: quando o admin cadastra, edita ou apaga um
+// jogo em "resultados", a tabela se recarrega sozinha.
+// (Depende do SQL: ALTER PUBLICATION supabase_realtime ADD TABLE resultados;)
+try {
+    supabaseClient
+        .channel('atualizacao-classificacao')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'resultados' }, () => {
+            carregarCampeonato();
+        })
+        .subscribe();
+} catch (erro) {
+    console.warn('Atualização ao vivo indisponível:', erro);
 }
 
 // Inicializa a tabela
 carregarCampeonato();
-carregarJogadores();
+carregarElencos();
